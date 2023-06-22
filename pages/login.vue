@@ -2,6 +2,9 @@
     <div class="login-screen">
         <div class="login-parent">
             <div class="login-card">
+                <div class="error-msg" v-if="_error">
+                    {{ _error }}
+                </div>
                 <form @submit.prevent="onSubmit">
                     <div class="inputs">
                         <input type="text" class="login-input" placeholder="Email Address" v-model="form.email" />
@@ -10,7 +13,10 @@
                         <input type="password" class="login-input" placeholder="Password" v-model="form.password" />
                     </div>
                     <div class="input-button">
-                        <button type="submit" class="login-button">Login</button>
+                        <button type="submit" class="login-button">
+                            <span v-if="isLoading"> Loading...</span>
+                            <span v-else>Login</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -38,6 +44,12 @@
     border-radius: 12px;
 }
 
+.error-msg {
+    color: red;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
 .inputs {
     margin-bottom: 13px;
 }
@@ -56,22 +68,38 @@
     background: indigo;
     color: #fff;
     font-size: 14px;
+    cursor: pointer;
 }
 </style>
 
-<script>
+<script setup>
 const url = "https://reqres.in/api/login"
+const isLoading = ref(false);
+const _error = ref(null);
 
 const form = reactive({
     email: "eve.holt@reqres.in",
     password: "cityslicka",
-})
+});
 
-function onSubmit() {
-    const response = useFetch(url, {
+async function onSubmit() {
+    if (isLoading.value) return;
+
+    isLoading.value = true;
+    const { data, error } = await useFetch(url, {
         method: "post",
         body: form
     });
+
+    isLoading.value = false;
+    if (error.value) {
+        _error.value = error.value.data.error;
+        return;
+    }
+
+    const auth = useAuth();
+    auth.value.isAuthenticated = true;
+    navigateTo('/')
 }
 
 </script>
